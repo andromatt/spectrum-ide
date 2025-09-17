@@ -1,0 +1,29 @@
+└── programa_raiz
+    └── lista_declaraciones
+        └── declaracion
+            └── declaracion_funcion_main
+                ├── INT
+                ├── MAIN
+                ├── IZQPAREN
+                ├── DERECHAPAREN
+                └── bloque
+                    ├── IZQLLAVE
+                    ├── sentencias_bloque
+                    │   ├── sentencia (sentencia_imprimir PUNTOYCOMA)
+                    │   │   ├── sentencia_imprimir
+                    │   │   │   ├── PRINT
+                    │   │   │   ├── IZQPAREN
+                    │   │   │   ├── lista_argumentos
+                    │   │   │   │   └── expresion
+                    │   │   │   │       └── expresion_primaria
+                    │   │   │   │           └── LITERAL_STRING("Hello world!")
+                    │   │   │   └── DERECHAPAREN
+                    │   │   └── PUNTOYCOMA
+                    │   └── sentencia (sentencia_salto PUNTOYCOMA)
+                    │       ├── sentencia_salto
+                    │       │   ├── RETURN
+                    │       │   └── expresion
+                    │       │       └── expresion_primaria
+                    │       │           └── LITERAL_INT(0)
+                    │       └── PUNTOYCOMA
+                    └── DERECHALLAVE

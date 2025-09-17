@@ -1,0 +1,349 @@
+package parser;
+
+import java_cup.runtime.*;
+
+parser code {:
+
+    public void syntax_error(Symbol cur_token) {
+        Symbol prev_token = (Symbol) stack.peek();
+        String message = "Error de Sintaxis Línea: " + prev_token.left + " se encontró '" + cur_token.value + "' de forma inesperada. Revise la sentencia.";
+        throw new RuntimeException(message);
+    }
+
+:};
+
+terminal
+    INT, CHAR, FLOAT, BOOL, STRING, VOID, CONST, BREAK, CONTINUE, FOR, WHILE, DO,
+    IF, ELSE, SWITCH, CASE, DEFAULT, RETURN, TRUE, FALSE, INPUT, PRINT, MAIN, LEN,
+    IDENTIFICADOR, LITERAL_INT, LITERAL_FLOAT, LITERAL_CHAR, LITERAL_STRING,
+    SUMA, RESTA, MULT, DIV, MOD, INCREMENTO, DECREMENTO, IGUALDAD, DESIGUALDAD,
+    MENORIGUAL, MAYORIGUAL, MENOR, MAYOR, AND, OR, NOT, ASIGNACION, IZQ_PAREN,
+    DERECHA_PAREN, IZQ_LLAVE, DERECHA_LLAVE, IZQ_CORCHETE, DERECHA_CORCHETE,
+    PUNTO_Y_COMA, COMA, DOS_PUNTOS;
+
+non terminal
+    programa_raiz, lista_declaraciones, declaracion, declaracion_variable, declaracion_constante,
+    declaracion_arreglo, inicializador_arreglo, lista_elementos_arreglo, dimension_arreglo_tamano,
+    acceso_arreglo, indices_arreglo, llamada_len, llamada_input, expresion_casting,
+    declaracion_funcion_main, declaracion_otra_funcion, lista_parametros, parametro,
+    tipo, bloque, sentencias_bloque, sentencia, sentencia_asignacion,
+    sentencia_if, parte_else, sentencia_switch, lista_casos_switch, bloque_caso, bloque_default,
+    sentencia_while, sentencia_do_while, sentencia_for, for_inicializacion, for_condicion, for_actualizacion,
+    sentencia_salto, sentencia_imprimir, expresion, expresion_primaria, expresion_unaria, expresion_multiplicativa,
+    expresion_aditiva, expresion_relacional, expresion_igualdad, expresion_logica_and, expresion_logica_or,
+    literal, llamada_funcion, lista_argumentos, lista_datos_arr, dimensiones_arreglo,
+    lista_parametros_opcional, lista_argumentos_opcional;
+
+// Precedencia de menor a mayor prioridad
+precedence right ASIGNACION;
+precedence left OR;
+precedence left AND;
+precedence left IGUALDAD, DESIGUALDAD;
+precedence left MENOR, MAYOR, MENORIGUAL, MAYORIGUAL;
+precedence left SUMA, RESTA;
+precedence left MULT, DIV, MOD;
+precedence right NOT, INCREMENTO, DECREMENTO;
+
+// Inicio
+start with programa_raiz;
+
+// Reglas de produccion
+
+programa_raiz ::=
+    lista_declaraciones
+;
+
+lista_declaraciones ::=
+    lista_declaraciones declaracion
+    | /* empty */
+;
+
+// Declaracion de funcion main, funcion x , variable, constante y arreglo
+declaracion ::=
+    declaracion_funcion_main
+    | declaracion_otra_funcion
+    | declaracion_variable PUNTO_Y_COMA
+    | declaracion_constante PUNTO_Y_COMA
+    | declaracion_arreglo PUNTO_Y_COMA
+;
+
+// Literales
+tipo ::= INT | CHAR | FLOAT | BOOL | STRING;
+
+literal ::=
+    LITERAL_INT
+    | LITERAL_FLOAT
+    | LITERAL_CHAR
+    | LITERAL_STRING
+    | TRUE
+    | FALSE
+;
+
+// Declaracion de variables
+declaracion_variable ::=
+    tipo IDENTIFICADOR
+    | tipo IDENTIFICADOR ASIGNACION expresion
+;
+
+// Declaracion de constantes
+declaracion_constante ::=
+    CONST tipo IDENTIFICADOR ASIGNACION expresion
+;
+
+// Arreglos
+declaracion_arreglo ::=
+    tipo IDENTIFICADOR dimensiones_arreglo ASIGNACION inicializador_arreglo
+    | tipo IDENTIFICADOR dimensiones_arreglo // ej. int numeros[7];
+    | tipo IDENTIFICADOR IZQ_CORCHETE DERECHA_CORCHETE ASIGNACION inicializador_arreglo // ej. int arr[] = {1,2,3};
+;
+
+dimensiones_arreglo ::=
+    dimensiones_arreglo IZQ_CORCHETE dimension_arreglo_tamano DERECHA_CORCHETE // 2D o mas
+    | IZQ_CORCHETE dimension_arreglo_tamano DERECHA_CORCHETE // 1D
+;
+
+dimension_arreglo_tamano ::=
+    LITERAL_INT
+    | IDENTIFICADOR;
+
+inicializador_arreglo ::=
+    IZQ_LLAVE lista_elementos_arreglo DERECHA_LLAVE // {n, n, n, n}
+;
+
+lista_elementos_arreglo ::=
+    lista_elementos_arreglo COMA lista_datos_arr
+    | lista_datos_arr
+    | lista_elementos_arreglo COMA inicializador_arreglo // Anida arreglo
+    | inicializador_arreglo  // para 2D
+;
+
+lista_datos_arr ::=
+    LITERAL_INT
+    | LITERAL_FLOAT
+    | LITERAL_CHAR
+    | LITERAL_STRING
+    | TRUE
+    | FALSE
+    | IDENTIFICADOR;
+
+// Accede a arreglo
+acceso_arreglo ::=
+    IDENTIFICADOR indices_arreglo
+;
+
+// Acceso a indices de un arreglo[n]
+indices_arreglo ::=
+    indices_arreglo IZQ_CORCHETE expresion DERECHA_CORCHETE
+    | IZQ_CORCHETE expresion DERECHA_CORCHETE
+;
+
+llamada_len ::= 
+    LEN IZQ_PAREN expresion DERECHA_PAREN
+;
+
+// funcion input()
+llamada_input ::=
+    INPUT IZQ_PAREN DERECHA_PAREN
+;
+
+// Casting en Spectrum tipo(expresion)
+expresion_casting ::=
+    tipo IZQ_PAREN expresion DERECHA_PAREN
+;
+
+declaracion_funcion_main ::=
+    INT MAIN IZQ_PAREN DERECHA_PAREN bloque
+;
+
+// funciones que no sean la main
+declaracion_otra_funcion ::=
+    tipo IDENTIFICADOR IZQ_PAREN lista_parametros_opcional DERECHA_PAREN bloque
+    | VOID IDENTIFICADOR IZQ_PAREN lista_parametros_opcional DERECHA_PAREN bloque
+;
+
+lista_parametros_opcional ::=
+    lista_parametros
+    | /* empty */
+;
+
+lista_parametros ::=
+    lista_parametros COMA parametro
+    | parametro
+;
+
+parametro ::= tipo IDENTIFICADOR;
+
+// Bloques de codigo
+bloque ::=
+    IZQ_LLAVE sentencias_bloque DERECHA_LLAVE
+;
+
+// Una lista de sentencias dentro de un bloque
+sentencias_bloque ::=
+    sentencias_bloque sentencia
+    | /* empty */
+;
+
+// Una sentencia puede ser de muchos tipos
+sentencia ::=
+    declaracion_variable PUNTO_Y_COMA
+    | declaracion_constante PUNTO_Y_COMA
+    | declaracion_arreglo PUNTO_Y_COMA
+    | sentencia_asignacion PUNTO_Y_COMA
+    | sentencia_if
+    | sentencia_switch
+    | sentencia_while
+    | sentencia_do_while
+    | sentencia_for
+    | sentencia_salto PUNTO_Y_COMA
+    | sentencia_imprimir PUNTO_Y_COMA
+    | bloque
+    | expresion PUNTO_Y_COMA
+;
+
+sentencia_asignacion ::=
+    IDENTIFICADOR ASIGNACION expresion
+    | acceso_arreglo ASIGNACION expresion
+;
+
+// Loops y condicionales en Spectrum
+sentencia_if ::=
+    IF IZQ_PAREN expresion DERECHA_PAREN bloque parte_else // if-else
+    | IF IZQ_PAREN expresion DERECHA_PAREN bloque // if
+;
+
+parte_else ::=
+    ELSE sentencia_if
+    | ELSE bloque
+;
+
+sentencia_switch ::=
+    SWITCH IZQ_PAREN expresion DERECHA_PAREN IZQ_LLAVE lista_casos_switch DERECHA_LLAVE
+;
+
+lista_casos_switch ::=
+    lista_casos_switch bloque_caso
+    | lista_casos_switch bloque_default
+    | /* empty */
+;
+
+bloque_caso ::=
+    CASE literal DOS_PUNTOS sentencias_bloque
+;
+
+bloque_default ::=
+    DEFAULT DOS_PUNTOS sentencias_bloque
+;
+
+sentencia_while ::=
+    WHILE IZQ_PAREN expresion DERECHA_PAREN bloque
+;
+
+sentencia_do_while ::=
+    DO bloque WHILE IZQ_PAREN expresion DERECHA_PAREN PUNTO_Y_COMA
+;
+
+sentencia_for ::=
+    FOR IZQ_PAREN for_inicializacion PUNTO_Y_COMA for_condicion PUNTO_Y_COMA for_actualizacion DERECHA_PAREN bloque
+;
+
+for_inicializacion ::=
+    declaracion_variable // int i = 0
+    | sentencia_asignacion
+;
+
+for_condicion ::=
+    expresion
+;
+
+for_actualizacion ::=
+    sentencia_asignacion
+    | expresion // Permite i++, ++i
+;
+
+// uso de break, continue y return
+sentencia_salto ::=
+    BREAK
+    | CONTINUE
+    | RETURN expresion
+    | RETURN
+;
+
+sentencia_imprimir ::=
+    PRINT IZQ_PAREN lista_argumentos_opcional DERECHA_PAREN
+;
+
+lista_argumentos_opcional ::=
+    lista_argumentos
+    | /* empty */
+;
+
+// Expresiones
+expresion ::= expresion_logica_or;
+
+expresion_logica_or ::=
+    expresion_logica_or OR expresion_logica_and
+    | expresion_logica_and
+;
+
+expresion_logica_and ::=
+    expresion_logica_and AND expresion_igualdad
+    | expresion_igualdad
+;
+
+expresion_igualdad ::=
+    expresion_igualdad IGUALDAD expresion_relacional
+    | expresion_igualdad DESIGUALDAD expresion_relacional
+    | expresion_relacional
+;
+
+expresion_relacional ::=
+    expresion_relacional MENOR expresion_aditiva
+    | expresion_relacional MAYOR expresion_aditiva
+    | expresion_relacional MENORIGUAL expresion_aditiva
+    | expresion_relacional MAYORIGUAL expresion_aditiva
+    | expresion_aditiva
+;
+
+expresion_aditiva ::=
+    expresion_aditiva SUMA expresion_multiplicativa
+    | expresion_aditiva RESTA expresion_multiplicativa
+    | expresion_multiplicativa
+;
+
+expresion_multiplicativa ::=
+    expresion_multiplicativa MULT expresion_unaria
+    | expresion_multiplicativa DIV expresion_unaria
+    | expresion_multiplicativa MOD expresion_unaria
+    | expresion_unaria
+;
+
+expresion_unaria ::=
+    NOT expresion_primaria
+    | RESTA expresion_primaria
+    | INCREMENTO expresion_primaria // Pre-incremento
+    | DECREMENTO expresion_primaria // Pre-decremento
+    | expresion_primaria INCREMENTO // Post-incremento
+    | expresion_primaria DECREMENTO // Post-decremento
+    | expresion_primaria
+;
+
+expresion_primaria ::=
+    IDENTIFICADOR
+    | literal
+    | IZQ_PAREN expresion DERECHA_PAREN
+    | llamada_funcion
+    | acceso_arreglo
+    | llamada_len
+    | llamada_input
+    | expresion_casting
+;
+
+llamada_funcion ::=
+    IDENTIFICADOR IZQ_PAREN lista_argumentos_opcional DERECHA_PAREN
+;
+
+lista_argumentos ::=
+    lista_argumentos COMA expresion
+    | expresion
+;
